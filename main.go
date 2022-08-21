@@ -60,6 +60,7 @@ func main() {
 				Name:   "get",
 				Usage:  "Retrieve prayer time",
 				Action: handlePrayerTimes(ctx),
+
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    "zone",
@@ -99,6 +100,7 @@ func setZone(ctx *common.Ctx) cli.ActionFunc {
 		if len(zId) != 0 {
 			if services.GetZoneById(ctx, zId) != nil {
 				services.SetUserConfig(ctx, "ZONE_ID", zId)
+				log.Printf("Updated zone id: %s", zId)
 				return nil
 			}
 		} else {

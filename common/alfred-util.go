@@ -54,11 +54,11 @@ type Modifier struct {
 	// The modifier key, e.g. "cmd", "alt".
 	// With Alfred 4+, modifiers can be combined, e.g. "cmd+alt", "ctrl+shift+cmd"
 	Key      string
-	arg      []string
-	subtitle *string
-	valid    bool
-	icon     *Icon
-	vars     map[string]string
+	Arg      []string          `json:"arg,omitempty"`
+	Subtitle *string           `json:"subtitle,omitempty"`
+	Valid    bool              `json:"valid,omitempty"`
+	Icon     *Icon             `json:"icon,omitempty"`
+	Vars     map[string]string `json:"vars,omitempty"`
 }
 type Icon struct {
 	Value string   `json:"path"`           // Path or UTI

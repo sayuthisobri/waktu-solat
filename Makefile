@@ -1,4 +1,4 @@
-SOURCES := $(wildcard **/*.go)
+SOURCES := $(shell find . -type f -name '*.go')
 BIN_PATH := $(shell go env GOBIN)
 BIN := $(BIN_PATH)/waktu-solat
 #PACKAGE_FILE := WaktuSolat.alfredworkflow

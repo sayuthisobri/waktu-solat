@@ -9,10 +9,9 @@ type UserConfig struct {
 
 func GetUserConfig(ctx *common.Ctx, key string, fallback string) string {
 	db, _ := OpenDb(ctx)
-	uc := UserConfig{
-		ID: key,
-	}
-	if tx := db.First(&uc); tx.Error != nil && len(uc.Value) == 0 {
+	uc := &UserConfig{}
+	tx := db.First(uc, "id=?", key)
+	if tx.Error == nil && len(uc.Value) != 0 {
 		return uc.Value
 	}
 	return fallback

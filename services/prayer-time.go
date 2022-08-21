@@ -83,7 +83,7 @@ func (p *PrayerDate) UnmarshalJSON(bytes []byte) error {
 func (p *PrayerDate) ToAlfredResponse() common.AlfredResponse {
 	var items []common.AlfredResponseItem
 	var vars = make(map[string]string)
-	vars["Locations"] = p.Zone.Locations
+	vars["location"] = p.Zone.Locations
 	for _, pt := range p.Times {
 		val := pt.DisplayValue
 		if pt.IsCurrent {
@@ -91,13 +91,21 @@ func (p *PrayerDate) ToAlfredResponse() common.AlfredResponse {
 		} else if pt.Duration > 0 {
 			val = fmt.Sprintf("%s | In %s", pt.DisplayValue, common.Timespan(pt.Time.Sub(time.Now()).Round(time.Second)).Format())
 		}
+		subtitle := fmt.Sprintf("Change Zone | %s", p.Zone.Locations)
+		mods := map[string]*common.Modifier{
+			"cmd": {
+				Subtitle: &subtitle,
+				Arg:      []string{p.ZoneID},
+				Vars: map[string]string{
+					"action": "change-zone",
+				},
+			},
+		}
 		item := common.AlfredResponseItem{
 			Title:    pt.Key,
 			Subtitle: &val,
 			Valid:    true,
-			//Variables: map[string]string{
-			//	"current": strconv.FormatBool(pt.IsCurrent),
-			//},
+			Mods:     mods,
 		}
 		items = append(items, item)
 
@@ -114,6 +122,7 @@ func (p *PrayerDate) init() {
 	dateField := rp.FieldByName("Date")
 	dateStr := dateField.String()
 	currentIndex := -1
+	p.Times = nil
 	for i := rp.NumField() - 1; i > -1; i-- {
 		typeField := rp.Type().Field(i)
 		tag := typeField.Tag
@@ -150,26 +159,41 @@ func GetPrayerTimes(ctx *common.Ctx, zoneId string, mode string) []PrayerDate {
 	}
 	zoneId = strings.ToUpper(zoneId)
 	db, _ := OpenDb(ctx)
-	prayerTime := &PrayerDate{}
+	prayerDate := &PrayerDate{}
 	zone := getZone(ctx, zoneId)
+	recordCount := int64(0)
+	db.Model(prayerDate).Where("zone_id = ?", zoneId).Count(&recordCount)
+	todayDate := time.Now().Format(PrimaryDateLayout)
+	var resDto *PrayerTimesDto
+	var res []PrayerDate
+	if recordCount == 0 {
+		resDto = fetchData(zoneId, zone, db)
+		//for _, p := range resDto.PrayerTimes {
+		//	if p.Date == todayDate {
+		//		p.init()
+		//		res = append(res, p)
+		//	}
+		//}
+	}
 	switch mode {
 	case "daily":
-		tx := db.Joins("Zone").First(prayerTime, "zone_id = ? AND date = ?",
-			zoneId, time.Now().Format(PrimaryDateLayout))
-		if tx.Error == nil {
-			prayerTime.init()
-			return []PrayerDate{*prayerTime}
+		if resDto != nil && len(resDto.PrayerTimes) != 0 {
+			for _, p := range resDto.PrayerTimes {
+				if p.Date == todayDate {
+					p.init()
+					res = append(res, p)
+					return res
+				}
+			}
+		}
+		tx := db.Joins("Zone").First(prayerDate, "zone_id = ? AND date = ?",
+			zoneId, todayDate)
+		if tx.Error == nil && tx.RowsAffected > 0 {
+			prayerDate.init()
+			return []PrayerDate{*prayerDate}
 		}
 	}
-	resDto := fetchData(zoneId, zone, db)
-	var res []PrayerDate
-	for _, p := range resDto.PrayerTimes {
-		if p.Date == time.Now().Format(PrimaryDateLayout) {
-			p.init()
-			res = append(res, p)
-		}
-	}
-	return res
+	return nil
 }
 
 func fetchData(zoneId string, zone *Zone, db *gorm.DB) *PrayerTimesDto {

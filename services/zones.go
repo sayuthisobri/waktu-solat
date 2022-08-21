@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"github.com/gocolly/colly"
 	"github.com/sayuthisobri/waktu-solat/common"
 	"gorm.io/gorm"
@@ -17,10 +18,17 @@ func (zs *ZoneStates) ToAlfredResponse() common.AlfredResponse {
 	var items []common.AlfredResponseItem
 	for _, s := range states {
 		for _, zone := range s.Zones {
+			subtitle := fmt.Sprintf("%s | %s", zone.ID, s.Name)
+			match := fmt.Sprintf("%s %s %s", zone.Locations, zone.ID, s.Name)
 			items = append(items, common.AlfredResponseItem{
-				Title:    zone.ID,
-				Subtitle: &zone.Locations,
+				Valid:    true,
+				Title:    zone.Locations,
+				Subtitle: &subtitle,
+				Match:    &match,
 				Arg:      zone.ID,
+				Variables: map[string]string{
+					"location": zone.Locations,
+				},
 			})
 		}
 	}
