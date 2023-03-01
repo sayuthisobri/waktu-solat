@@ -13,7 +13,7 @@ $(PACKAGE_FILE): $(FILES)
 
 $(BIN): $(SOURCES)
 	CGO_ENABLED=1 go build -ldflags="-s -w" -o $(BIN)
-	upx --best --lzma $(BIN)
+#	upx --best --lzma $(BIN)
 
 clean:
 	-rm $(BIN)
